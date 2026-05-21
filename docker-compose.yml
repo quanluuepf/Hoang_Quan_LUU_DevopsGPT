@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  # Redis cache service
+  cache:
+    image: redis:7-alpine
+    container_name: chat-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache_data:/data
+    networks:
+      - chat-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Backend API service
+  chat-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chat-api-server
+    ports:
+      - "3000:3000"
+    depends_on:
+      cache:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+    networks:
+      - chat-network
+    restart: unless-stopped
+
+  # Frontend UI service
+  chat-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chat-ui-server
+    ports:
+      - "5173:5173"
+    depends_on:
+      - chat-api
+    environment:
+      - VITE_API_URL=http://chat-api:3000
+    networks:
+      - chat-network
+    restart: unless-stopped
+
+volumes:
+  cache_data:
+
+networks:
+  chat-network:
+    driver: bridge
