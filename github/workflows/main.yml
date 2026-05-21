@@ -28,4 +28,6 @@ jobs:
 
       - name: Deploy
         if: github.ref_type == 'tag'
-        run: echo "Déploiement en cours..."
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: echo "Déploiement en cours..."git 
